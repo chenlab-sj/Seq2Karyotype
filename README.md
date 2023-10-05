@@ -1,1 +1,1 @@
-# Seq2Karotype
+# Seq2Karyotype
