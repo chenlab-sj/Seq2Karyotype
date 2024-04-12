@@ -69,7 +69,7 @@ There will be 4 output files in total:
 `sample_name.log`: Your good old log file.
 `sample_name.par`: The parameters used including reference diploid coverage, karyotype models, etc,.
 
-5. Launch the viewer and visualize output.
+5. Launch the viewer for visualization.
 
 ```
 # if you are running this on your local machine, such as a desktop or laptop:
@@ -86,7 +86,8 @@ INFO:     Application startup complete.
 INFO:     Uvicorn running on http://10.220.16.129:39738 (Press CTRL+C to quit)
 ```
 
-6. Load files:
+Load the output files
+
 ![example](./images/example_file_selection.gif)
 
 ## Acknowledgments
