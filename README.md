@@ -65,8 +65,11 @@ All done
 There will be 4 output files in total:
 
 `sample_name.bed`: The main output file contains the segmentation information.
+
 `sample_name.dat.gz`: The output for individual chromosome information.
+
 `sample_name.log`: Your good old log file.
+
 `sample_name.par`: The parameters used including reference diploid coverage, karyotype models, etc,.
 
 5. Launch the viewer for visualization.
