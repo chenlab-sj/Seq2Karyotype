@@ -56,11 +56,13 @@ s2k getconfig
 4. Run S2K to generate output files.
 
 ```
-s2k analyze -i sample_name.txt -c your_configuration_file.ini -s sample_name
+s2k analyze -i sample_name.txt -c your_configuration_file.ini -s sample_name -m0 diploid_coverage -mc merging_coeff
 ... Lots of log info! ...
 12:18:19 S2K.WGS: INFO: Ready to report!
 All done
 ```
+
+Note that `m0` and `mc` are optional. `m0` will be calcuate by the diploid detection algorithm, and can be adjusted if incorrect. `mc` is the merging coefficient that controls the merge between segements.
 
 There will be 4 output files in total:
 
