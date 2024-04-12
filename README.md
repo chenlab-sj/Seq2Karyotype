@@ -94,6 +94,8 @@ Load the output files
 
 If you find this tool useful, please star this repo and cite our paper (when it comes out) :)
 
+Limeng Pu et al. "Seq2Karyotype (S2K): A method for deconvoluting heterogeneity of copy number alterations using single-sample whole-genome sequencing data" [abstract]. Proceedings of the American Association for Cancer Research Annual Meeting 2024; Part 1 (Regular Abstracts); 2024 Apr 5-10; San Diego, CA. Philadelphia (PA): AACR; Cancer Res 2024;84(6_Suppl):Abstract nr 7419
+
 This README file is written by Limeng Pu.
 
 
