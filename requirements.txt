@@ -1,0 +1,8 @@
+numpy>=1.17.1
+scipy>=1.3.1
+pandas>=1.1.5
+scikit-learn>=0.20.0
+hmmleanr>=0.3.0
+ruptures>=1.1.8
+jinja2>=3.1.2
+
