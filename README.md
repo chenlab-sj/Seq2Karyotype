@@ -10,7 +10,7 @@ Download the package, then follow the instructions below.
 
 ```
 # setup the virtual environment
-conda -create -n s2k
+conda -create -n s2k python=3.11
 # activate the virtual envrionment
 conda activate s2k
 # install the package
@@ -87,7 +87,7 @@ INFO:     Uvicorn running on http://10.220.16.129:39738 (Press CTRL+C to quit)
 ```
 
 6. Load files:
-![example](./examples/docna.gif)
+![example](./images/example_file_selection.gif)
 
 ## Acknowledgments
 
