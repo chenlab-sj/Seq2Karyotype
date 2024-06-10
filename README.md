@@ -20,7 +20,7 @@ pip install Seq2Karyotype
 
 ## Download Auxiliary Files
 
-CytoBand annotation are provided in the folder `aux`. You will have to download or generate the SNP whitelist yourself. They can be found at [hg19](https://data.broadinstitute.org/snowman/hg19/variant_calling/vqsr_resources/Exome/v2/), [hg38](https://console.cloud.google.com/storage/browser/_details/genomics-public-data/resources/broad/hg38/v0/1000G_phase1.snps.high_confidence.hg38.vcf.gz;tab=live_object).
+CytoBand annotation are provided in the folder `aux`. You will have to download the SNP whitelist yourself. Both lists for hg19, hg38 are provided under https://drive.google.com/drive/folders/1ontR5R_dfl8uJc50PwHA2hxEBIcdkmn7?usp=drive_link. You can use your own SNP list if you wish, just make sure to follow the same format as in the provided files.
 
 ## Usage 
 
