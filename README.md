@@ -26,7 +26,7 @@ CytoBand annotation are provided in the folder `aux`. You will have to download 
 
 1. Convert your variant calling file to allele count format.
 
-An example snippet is provided below
+An example script for converting gVCF file is provided below
 
 ```
 #!/bin/bash
