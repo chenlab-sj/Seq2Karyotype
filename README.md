@@ -62,7 +62,7 @@ s2k analyze -i sample_name.txt -c your_configuration_file.ini -s sample_name -m0
 All done
 ```
 
-Note that `m0` and `mc` are optional. `m0` will be calcuate by the diploid detection algorithm, and can be adjusted if incorrect. `mc` is the merging coefficient that controls the merge between segements.
+Note that `m0` and `mc` are optional. `m0` will be calcuate by the diploid detection algorithm, and can be adjusted if incorrect. `mc` is the merging parameter that controls the merge between segements.
 
 There will be 4 output files in total:
 
