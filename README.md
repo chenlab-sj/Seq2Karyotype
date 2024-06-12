@@ -24,7 +24,7 @@ CytoBand annotation are provided in the folder `aux`. You will have to download 
 
 ## Usage 
 
-1. Convert your variant calling file to allele count format (**optional**).
+1. Convert your variant calling file to allele count format.
 
 An example snippet is provided below
 
