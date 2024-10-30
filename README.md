@@ -10,7 +10,7 @@ Download the package, then follow the instructions below.
 
 ```
 # setup the virtual environment
-conda -create -n s2k python=3.11
+conda -create -n s2k python=3.11 pandas=1.5.2 shiny==0.6.0
 # activate the virtual envrionment
 conda activate s2k
 # install the package
