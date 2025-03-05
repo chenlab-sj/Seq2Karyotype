@@ -56,7 +56,7 @@ model_presets = {
                                   ai = lambda k,m0 : k/(1+k)),
                  
                  'A+AA' : Preset (k = lambda m,dv,m0 : np.abs(2*m/m0 - 1), # TODO: new
-                                  m = lambda k,m0: (1 + k)*m0/2,
+                                  m = lambda k,m0: (1+k)*m0/2,
                                   ai = lambda k,m0 : 0.5 * np.ones_like(k)),
                    
                  'AAB+AAAB' : Preset (k = lambda m,dv,m0 : (6*dv-1)/(1-2*dv),
@@ -64,7 +64,11 @@ model_presets = {
                                       ai = lambda k,m0 : (1+k)/(6+2*k)),
                    
                  'AA+AAA' : Preset (k = lambda m,dv,m0 : np.abs(2*m/m0 - 2), #TODO: new
-                                    m = lambda k,m0 : (1 + k/2)*m0,
+                                    m = lambda k,m0 : (1+k/2)*m0,
+                                    ai = lambda k,m0 : 0.5 * np.ones_like(k)),
+                 
+                 'AA+AAAA' : Preset (k = lambda m,dv,m0 : np.abs(2*m/m0 - 2), #TODO: new
+                                    m = lambda k,m0 : (1+k)*m0,
                                     ai = lambda k,m0 : 0.5 * np.ones_like(k)),
                  
                  'AA+AAB' : Preset (k = lambda m,dv,m0 : 2*(1-2*dv)/(2*dv+1),
@@ -98,6 +102,7 @@ def pick_model(ai, s_ai, cn, s_cn, models):
         'A+AA': 4, 
         'AAB+AAAB': 4,
         'AA+AAA': 5,
+        'AA+AAAA':5,
         'AA+AAB': 4,
         'AAB+AABB': 4,
         'AAA+AAAA': 6
@@ -106,20 +111,21 @@ def pick_model(ai, s_ai, cn, s_cn, models):
     results = {'model' : None, 'd_model' : np.nan, 'k': np.nan, 
                 'AB': np.nan, '(AB)(2+n)': np.nan, '(AB)(2-n)': np.nan, 'A': np.nan, 'AA': np.nan,
                 'AAB': np.nan, 'AAAB': np.nan, 'AAA': np.nan, 'AAAA': np.nan, 'A+AA':np.nan,
-                'AAB+AAAB': np.nan, 'AA+AAA':np.nan, 'AA+AAB': np.nan, 'AAB+AABB': np.nan, 'AAA+AAAA': np.nan}
+                'AAB+AAAB': np.nan, 'AA+AAA':np.nan, 'AA+AAAA':np.nan, 'AA+AAB': np.nan, 'AAB+AABB': np.nan, 'AAA+AAAA': np.nan}
     
     scaled_model_weights = model_weights.copy()
     for key in scaled_model_weights:
         if key in ['A', 'AA', 'A+AA']:
             scaled_model_weights[key] *= l
-    
+            
     for model in models:
         d, k = calculate_distance_minim(ai, s_ai, cn, s_cn, model_presets[model]) 
         nll = 0.5 * d ** 2
         d = nll + scaled_model_weights[model]
+        # d = nll + model_weights[model]
         results[model] = d
-            
-    da = ai/s_ai
+
+    da = ai/s_ai 
     dc = (cn-2)/s_cn
     dd = 0.5 * (np.sqrt(da**2+dc**2)) ** 2
     
