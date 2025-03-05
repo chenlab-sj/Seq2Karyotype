@@ -17,7 +17,6 @@ from S2K import Report
 from S2K import Scoring
 from S2K import Consts
 
-
 class Genome:
     """Class to run genome wide tests of HE and create chromosomes."""
     def __init__(self, sample_name, logger, config, CB_file, models, no_processes = 1):
@@ -65,12 +64,14 @@ class Genome:
                 self.chromosomes[chrom] = Chromosome.Chromosome (chrom, data.copy(), 
                                                              self.config, self.logger,
                                                              self.genome_medians, 
-                                                             self.CB.loc[self.CB['chrom'] == chrom])
+                                                             self.CB.loc[self.CB['chrom'] == chrom],
+                                                             self.models)
             else:
                 self.sex_chromosomes[chrom] = Chromosome.Chromosome (chrom, data.copy(), 
                                                              self.config, self.logger,
                                                              self.genome_medians, 
-                                                             self.CB.loc[self.CB['chrom'] == chrom])
+                                                             self.CB.loc[self.CB['chrom'] == chrom],
+                                                             self.models)
             self.logger.debug (f"Chromosome {chrom} has {len(data)} markers.")
          
     def segment_genome (self, m0 = 0, mc = 5.0, fb_alpha = Consts.FB_ALPHA):
@@ -250,6 +251,65 @@ class Genome:
                 filtered_segments.append(s)
         self.logger.info(('Total number of diploid segments after copy number and # of SNVs filtering is {}'.format(len(filtered_segments))))
         
+        """
+        new debug stuff 
+        """
+        # # TODO newly added shit
+        # self.diploid_segment_filter = [
+        #         (s.centromere_fraction < Consts.CENTROMERE_THR) &  # Centromere condition must be met
+        #         (
+        #             (s.parameters['ai'] < Consts.DIPLOID_AI_THR) |  # Either AI condition
+        #             (np.abs(s.parameters['m'] / self.genome_medians['m0'] - 1) < Consts.DIPLOID_dCN_THR / 2)  # Or dCN condition
+        #         )
+        #         for s in self.all_segments
+        #     ]
+        
+        # # Convert to NumPy array for further processing
+        # self.diploid_segment_filter = np.array(self.diploid_segment_filter)
+        
+        # # Step 2: Identify which segments pass the filter
+        # passed_filter_indices = np.where(self.diploid_segment_filter)[0]
+        
+        # self.logger.info(f"Number of segments passing the filter: {len(passed_filter_indices)}")
+        
+        # self.diploid_chrs = [self.all_chrs[i] for i in passed_filter_indices]
+        # self.diploid_segments = [self.all_segments[i] for i in passed_filter_indices]
+        
+        # self.logger.info('Total number of diploid segments is {}'.format(len(self.diploid_segments)))
+        
+        # # Step 3: Further filtering for copy number and SNVs
+        # filtered_segments = []
+        # for s in self.diploid_segments:
+        #     cns = s.parameters['m'] / s.genome_medians['m0']
+        #     cn_condition = 0.5 < cns < 1.5
+        
+        #     # Log details of copy number filtering
+        #     self.logger.info(f"Segment {s}:")
+        #     self.logger.info(f"  - Copy number condition: {cn_condition} (cns: {cns})")
+        
+        #     if cn_condition:
+        #         filtered_segments.append(s)
+        
+        # self.logger.info('Total number of diploid segments after copy number and SNVs filtering is {}'.format(len(filtered_segments)))
+        
+        # # Step 4: Prepare data for scoring
+        # if len(filtered_segments) > 0:
+        #     data_for_scoring = np.array([(s.parameters['ai'], 
+        #                                   2 * s.parameters['m'] / self.genome_medians['m0'] - 2, 
+        #                                   s.parameters['n']) for s in filtered_segments])
+        #     self.scorer = Scoring.Scoring(fb=self.genome_medians['fb'], 
+        #                                   m0=self.genome_medians['m0'], 
+        #                                   window_size=Consts.SNPS_IN_WINDOW, 
+        #                                   initial_data=data_for_scoring, 
+        #                                   logger=self.logger)
+        # else:
+        #     self.logger.warning("No segments passed all filtering criteria. Skipping scoring step.")
+            
+            
+        #     self.scorer = None
+        # # TODO end of newly added shit
+        
+        
         data_for_scoring = np.array([(s.parameters['ai'], 2*s.parameters['m']/self.genome_medians['m0']-2, s.parameters['n']) for s in filtered_segments])
         self.scorer = Scoring.Scoring (fb = self.genome_medians['fb'], m0 = self.genome_medians['m0'], window_size = Consts.SNPS_IN_WINDOW, 
                                        initial_data = data_for_scoring, logger = self.logger)
@@ -309,7 +369,7 @@ class Genome:
             merge_cnt = 0
             while post_merge_indicator > 0:
                 new_merged = self.post_merge(mc = mc)
-                self.logger.info('Merging round {}'.format(merge_cnt))
+                self.logger.info('Merging round {}'.format(merge_cnt+1))
                 self.logger.debug ("Starting postprocessing segmentation.")      
                 for chrom in self.chromosomes.keys():
                     self.chromosomes[chrom].generate_merged_segments(new_merged[chrom])
@@ -338,6 +398,7 @@ class Genome:
                 thr = FDR(np.sort(ps[np.isfinite(ps)]), alpha = Consts.DIPLOID_ALPHA, score = True)
                 self.genome_medians['thr_HE'] = thr
                 self.scorer.set_thr (thr)
+
                 for seg in self.all_merged_segments:
                     self.scorer.analyze_segment(seg, self.models)
                 self.score_model_distance (merged=True)
@@ -346,6 +407,26 @@ class Genome:
                 merge_cnt += 1
                 if merge_cnt == 10:
                     break
+            
+            """
+            Ad hoc fix for chromosome 19 low coverage issue
+            """
+            flag = 0
+            for i, seg in enumerate(self.all_merged_segments):
+                if seg.chrom != 'chr19':
+                    continue
+                else:
+                    newm = seg.parameters['m'] + 2 * 3.178160862432513
+                    if seg.parameters['model'] == '(AB)(2-n)':
+                        self.all_merged_segments[i].parameters['m'] = newm
+                        self.logger.info('replaced new coverage {} to {}, {}'.format(seg.parameters['m'], self.all_merged_segments[i].parameters['m'], newm))
+                        flag = 1
+                        
+            if flag == 1:
+                for seg in self.all_merged_segments:
+                    self.scorer.analyze_segment(seg, self.models)
+                self.score_model_distance (merged=True)
+            
         else:
             self.logger.info('No merging is performed')
             self.all_merged_segments = self.all_segments
@@ -355,7 +436,137 @@ class Genome:
                 self.chromosomes[chrom].merged_segments = []
                 for seg in self.chromosomes[chrom].segments:
                     self.chromosomes[chrom].merged_segments.append(seg)
+                    
+        """
+        Final typing with clustering
+        """
+
+        bed = pd.DataFrame()
+        for segment in self.all_merged_segments:
+            if (1-segment.centromere_fraction)*(segment.end - segment.start) < 5e6 or segment.parameters['model'] == 'UN':
+                continue
+            else:
+                attr_list = [segment.chrom, 
+                             segment.start,
+                             segment.end,
+                             segment.end - segment.start,
+                             segment.parameters['ai'], 
+                             segment.parameters['n'],
+                             segment.parameters['m'],
+                             2*segment.parameters['m']/segment.genome_medians['m0'],
+                             segment.parameters['d_HE'], 
+                             segment.parameters['score_HE'], 
+                             segment.parameters['model'],
+                             segment.parameters['d_model'],
+                             segment.parameters['AB']] + \
+                            [segment.parameters[x] for x in segment.models] + \
+                            [segment.parameters['model_confidence'],
+                            segment.parameters['score_model'], 
+                            segment.parameters['k'], 
+                            segment.cytobands,
+                            segment.centromere_fraction]
+                bed = bed.append(pd.Series(attr_list), ignore_index=True)
+                
+        bed.columns = [
+            'chrom', 'start', 'end', 'length', 'ai', 'n', 'm', 'cn', 'd_HE', 
+            'score_HE', 'model', 'd_model', 'AB'
+        ] + \
+        segment.models + \
+        [
+            'model_confidence', 'score_model', 'k', 'cytobands', 'centromere_fraction'
+        ]
         
+        if len(bed) > 20:
+            
+            from sklearn.preprocessing import StandardScaler
+            from sklearn.mixture import GaussianMixture
+            
+            self.logger.info('Calibration with clustering method')
+
+            bed_filtered = bed[((1-bed['centromere_fraction']) * bed['length'] >= 5e6)]
+            scaler = StandardScaler()
+            X = scaler.fit_transform(bed_filtered[['cn', 'ai']].values)
+            gmm = GaussianMixture(
+                                    n_components=10,
+                                    covariance_type='diag',
+                                    init_params='kmeans',
+                                    n_init=10,
+                                    tol=1e-4,
+                                    max_iter=500,
+                                    random_state=0
+                                ).fit(X)
+            labels = gmm.predict(X)
+            
+            self.logger.info(f"Generated labels: {np.unique(labels)}")
+
+            # Step 4: Add labels to the filtered dataframe
+            self.logger.info('Adding labels to filtered dataframe...')
+            bed_filtered = bed_filtered.copy()  # Ensure bed_filtered is independent of bed
+            bed_filtered['cluster'] = labels
+            self.logger.info(f"First few rows of filtered data with clusters:\n{bed_filtered[['cn', 'ai', 'cluster']].head()}")
+            self.logger.info(f"Size of bed_filtered: {bed_filtered.shape}")
+            
+            # Step 5: Initialize cluster column in the original dataframe
+            self.logger.info('Initializing cluster column in the original dataframe...')
+            bed['cluster'] = np.nan
+            self.logger.info(f"Initial 'cluster' column in bed:\n{bed['cluster'].head()}")
+            self.logger.info(f"Size of bed: {bed.shape}")
+            
+            # Step 6: Map labels back to the original dataframe
+            self.logger.info('Mapping labels back to the original dataframe...')
+            bed.loc[bed_filtered.index, 'cluster'] = bed_filtered['cluster']
+            self.logger.info(f"Updated 'cluster' column in bed:\n{bed[['centromere_fraction', 'length', 'cluster']].head()}")
+            self.logger.info(f"Size of bed after mapping clusters: {bed.shape}")
+
+            for cluster_label, group in bed.groupby('cluster'):
+                # Add verbose logging
+                self.logger.info(f"Processing cluster label: {cluster_label}")
+                
+                # Log the specific columns for the group
+                specific_columns = ['ai', 'cn', 'model']
+                if all(col in group.columns for col in specific_columns):
+                    self.logger.info(f"Details for cluster {cluster_label} (specific columns):\n{group[specific_columns]}")
+                else:
+                    self.logger.warning(f"Some of the specific columns ({specific_columns}) are missing in the group for cluster {cluster_label}.")
+                
+                # Calculate model sums and log them
+                models_sum = group[['AB'] + segment.models].sum()
+                self.logger.info(f"Model sums for cluster {cluster_label}:\n{models_sum}")
+                
+                # Determine the calibrated model and log it
+                calibrated_model = models_sum.idxmin()
+                self.logger.info(f"Calibrated model for cluster {cluster_label}: {calibrated_model}")
+                
+                # Update the 'calibrated_model' column in the original dataframe
+                bed.loc[bed['cluster'] == cluster_label, 'calibrated_model'] = calibrated_model
+
+                
+            for i, row in bed.iterrows():
+                if pd.isna(row['cluster']):
+                    continue
+                if row['calibrated_model'] == 'A' and row['cn'] > 2:
+                    continue
+                chrom = row['chrom']
+                start = row['start']
+                end = row['end']
+            
+                # Find the index of the matching segment
+                for idx, segment in enumerate(self.chromosomes[chrom].merged_segments):
+                    if segment.start == start and segment.end == end:
+                        # Update the model and k parameters in the original segment object
+                        self.logger.info(f"{row['cluster']}")
+                        self.logger.info(f"{segment.chrom} {segment.start} {segment.end}")
+                        self.logger.info(f"{row['model']} to {row['calibrated_model']}")
+                        self.chromosomes[chrom].merged_segments[idx].parameters['model'] = row['calibrated_model']
+                        self.chromosomes[chrom].merged_segments[idx].parameters['k'] = Models.calc_k(
+                            segment.parameters['ai'], 
+                            self.scorer.ai_param['s'], 
+                            2 * segment.parameters['m'] / segment.genome_medians['m0'], 
+                            self.scorer.cn_param['s'], 
+                            row['calibrated_model']
+                        )
+                        break
+            
         # """
         # special cases with homozygous deletion in TSG
         # """
@@ -396,12 +607,12 @@ class Genome:
         finite_filter = np.array([np.isfinite(seg.parameters['d_model']) for seg in all_segments])
         
         filter = size_filter & cent_filter & model_filter & finite_filter
-        
+        models = self.models
+
         if sum(filter) >= 3:
             indexes = np.where(filter)[0]
             segments = [all_segments[i] for i in indexes]
             zs_ns = [seg.parameters['d_model'] for seg in segments]
-    
             z_n = np.array(zs_ns)
             x = sts.expon.ppf (np.linspace (0,1,len(z_n)+2)[1:-1])
             huber = slm.HuberRegressor (fit_intercept = False)
@@ -416,6 +627,12 @@ class Genome:
                     ps.append(p)
                 else:
                     seg.parameters['score_model'] = 0
+                    
+                model_scores = np.array([seg.parameters[m] for m in models])
+                model_index = np.argmin(model_scores)
+                confidences = softmax(model_scores)
+                confidence_score = confidences[model_index]
+                seg.parameters['model_confidence'] = confidence_score
                 
             self.genome_medians['d_model'] = {'a' : a}
             ps = np.array(ps)
@@ -425,9 +642,10 @@ class Genome:
             self.genome_medians['d_model'] = {'a' : np.nan}
             for seg in all_segments:
                 seg.parameters['score_model'] = 0
+                seg.parameters['model_confidence'] = 0
             self.genome_medians['thr_model'] = np.nan
     
-    def merge_segments_cpd (self):
+    def merge_segments_cpd(self):
         merged_segments = {}
         self.logger.info('Merging segments using CPD...')
 
@@ -438,21 +656,8 @@ class Genome:
                 tmp = self.chromosomes[c].segments
             except KeyError:
                 continue
-            tmp_x = [[s.parameters['m'], 
-                      s.parameters['AB'],
-                      s.parameters['(AB)(2+n)'],
-                      s.parameters['(AB)(2-n)'],
-                      s.parameters['A'],
-                      s.parameters['AA'],
-                      s.parameters['AAB'],
-                      s.parameters['AAAB'],
-                      s.parameters['AAA'],
-                      s.parameters['AAAA'],
-                      s.parameters['A+AA'],
-                      s.parameters['AAB+AAAB'],
-                      s.parameters['AA+AAA'],
-                      s.parameters['AA+AAB'],
-                      s.parameters['AAB+AABB']] for s in tmp]
+            tmp_x = [[s.parameters['m'], s.parameters['AB']] + [s.parameters[x] for x in self.models] for s in tmp]
+                
             tmp_x = np.array(tmp_x)
             tmp_x = np.nan_to_num(tmp_x, nan=-1)
                         
