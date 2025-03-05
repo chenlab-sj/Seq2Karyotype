@@ -106,20 +106,14 @@ class Scoring:
         s_cn = self.cn_param['s']
         
         ai = segment.parameters['ai']
-            
         try:
-            if segment.chrom == 'chrY':
-                segment.parameters.update ({'model' : 'A', 'd_model' : 0.0,
-                                            'k': cn, 'p_model' : np.nan, 'AB':np.nan, '(AB)(2+n)': np.nan,
-                                            '(AB)(2-n)': np.nan, 'A': np.nan, 'AA': np.nan, 'AAB': np.nan, 'AAAB': np.nan, 'AAA': np.nan, 'AAAA': np.nan,
-                                            'A+AA': np.nan, 'AAB+AAAB': np.nan, 'AA+AAA': np.nan, 'AA+AAB': np.nan, 'AAB+AABB': np.nan, 'AAA+AAAA': np.nan})
-            else:
-                segment.parameters.update (Models.pick_model(ai,s_ai,cn,s_cn,models))
+            segment.parameters.update (Models.pick_model(ai,s_ai,cn,s_cn,models))
         except (IndexError, AssertionError):
-            segment.parameters.update ({'model' : 'UN', 'd_model' : np.nan,
-                                        'k': np.nan, 'p_model' : np.nan, 'AB':np.nan, '(AB)(2+n)': np.nan,
-                                        '(AB)(2-n)': np.nan, 'A': np.nan, 'AA': np.nan, 'AAB': np.nan, 'AAAB': np.nan, 'AAA': np.nan, 'AAAA': np.nan,
-                                        'A+AA': np.nan, 'AAB+AAAB': np.nan, 'AA+AAA': np.nan, 'AA+AAB': np.nan, 'AAB+AABB': np.nan, 'AAA+AAAA': np.nan})
+            self.logger.info(f"Problematic segment encountered: {segment}")
+            base_parameters = {'model' : 'UN', 'd_model' : np.nan, 'k': np.nan, 'p_model' : np.nan, 'AB':np.nan}
+            for model in models:
+                base_parameters[model] = np.nan
+                segment.parameters.update (base_parameters)
                 
     def set_thr (self, thr):
         self.dipl_dist['thr'] = thr
